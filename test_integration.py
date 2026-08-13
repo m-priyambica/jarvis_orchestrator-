@@ -70,6 +70,7 @@ class FakeUI:
         self.states: list[str] = []
         self.muted = False
         self.current_file = None
+        self.roll_calls: list[list[dict]] = []
         self.on_text_command = None
         self.on_remote_clicked = None
         self.on_interrupt = None
@@ -82,6 +83,12 @@ class FakeUI:
 
     def set_state(self, state: str) -> None:
         self.states.append(state)
+
+    def set_roll_call(self, roster: list[dict]) -> None:
+        self.roll_calls.append(roster)
+
+    def has_desktop_shortcut(self) -> bool:
+        return False
 
     def start_camera_stream(self) -> None:
         pass
@@ -117,7 +124,13 @@ def install_stubs() -> None:
     # and google.genai are actually installed in this sandbox — no need to
     # fake those; only the hard requirements main.py can't get past without
     # get stubbed).
-    for name in ("psutil", "playwright", "playwright.async_api", "sounddevice"):
+    for name in (
+        "psutil", "playwright", "playwright.async_api", "sounddevice",
+        # Installed GUI automation packages can still fail at import time on
+        # headless hosts without DISPLAY, so treat them like optional runtime
+        # dependencies for this dry run.
+        "pyautogui", "pygetwindow", "mss", "cv2",
+    ):
         stubbed = _stub_if_missing(name)
         print(f"  [stub] {name}: {'mocked (not installed here)' if stubbed else 'using real module'}")
 
