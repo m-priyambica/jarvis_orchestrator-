@@ -112,8 +112,46 @@ python main.py
 | --- | --- |
 | **OS** | Windows 10/11, macOS, or Linux |
 | **Python** | 3.11 or 3.12 |
-| **Microphone** | Required for voice interaction |
-| **API Key** | Free Gemini API key (`config/api_keys.json`) |
+| **Desktop session** | A real display server/window manager is needed for the PyQt6 HUD, screen capture, browser automation, and desktop controls. |
+| **Audio devices** | Microphone and speaker/output device are required for the Gemini Live voice loop. |
+| **API Key** | Free Gemini API key stored as `gemini_api_key` in `config/api_keys.json`; `main.py` reads this file before connecting to Gemini Live. |
+
+---
+
+## ⚠️ Known Limitations / Headless Testing
+
+MARK L is primarily a desktop voice assistant, not a pure terminal service. Most runtime features expect:
+
+- A logged-in desktop environment with a display server and window manager. The PyQt6 HUD, screen/webcam capture, browser automation, window management, clipboard panels, and game/app controls are not meaningfully testable in a bare SSH/container session.
+- Working local audio input/output devices. The main loop opens microphone input and streams audio to the Gemini Live API; without audio devices it may fail before conversation starts.
+- A Gemini API key at `config/api_keys.json` using the shape below before the live assistant can connect:
+
+```json
+{
+  "gemini_api_key": "YOUR_KEY_HERE"
+}
+```
+
+For CI or headless Linux, use the integration dry run instead of `python main.py`:
+
+```bash
+xvfb-run -a python3 test_integration.py
+```
+
+On minimal Debian/Ubuntu runners, install the system pieces first:
+
+```bash
+sudo apt-get install -y xvfb python3-tk
+python3 -m pip install -r requirements.txt
+```
+
+The Windows-only packages in `requirements.txt` are guarded by platform markers and are skipped automatically on Linux/macOS. The dry run replaces the real GUI with `FakeUI`, redirects state/vault writes into a temporary directory, and does not require a microphone, webcam, Claude CLI, or Gemini API call.
+
+Additional audit checks that avoid hardware/API access can be run with:
+
+```bash
+python3 -m pytest test_smoke_audit.py
+```
 
 ---
 
